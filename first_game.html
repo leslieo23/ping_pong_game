@@ -1,0 +1,202 @@
+<html>
+<!--creating a canvas for the game(block for the game)-->
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+	<script>
+		// create two variables
+		var canvas;//will handle dimenions we set "width=800 height=600"
+		var canvasContext;//graphic information that will go over the canvas
+		var ballX=50; //position of ball horizontally
+		var ballSpeedX=10; //speed of ball
+		var ballY=50;
+		var ballSpeedY=4;
+		var player1Score=0;
+		var player2Score=0;
+		var showingWinScreen= false;
+
+		var paddle1Y=250;
+		var paddle2Y=250;
+		const PADDLE_HEIGHT =100;
+		const PADDLE_THICKNESS=10;
+		const WINNING_SCORE=10;
+		 //cannot be changed!!
+
+		// MOUSE position
+		function calculateMousePos(evt){ //everytime the mouse moves, it will call a function. it will receive coordinates based on where the mouse is
+			var rect = canvas.getBoundingClientRect(); //it will get the canvas which is black
+			var root = document.documentElement; //getting the html page
+			var mouseX = evt.clientX - rect.left -root.scrollLeft;//taking the position from where the mouse is (this position is not relative to the canvas)
+			var mouseY = evt.clientY - rect.top -root.scrollTop;
+
+			return{
+				x:mouseX, //returns a pair of variables
+				y:mouseY
+			};
+		}
+		function handleMouseClick(evt){
+			if(showingWinScreen){
+				player1Score=0;
+				player2Score=0;
+				showingWinScreen=false;
+			}
+		}
+		//window onload when the page completely loads, run this function
+		window.onload=function(){
+			canvas= document.getElementById("gameCanvas");//canvas will equal the id "gameCanvas"
+			canvasContext= canvas.getContext('2d');
+			//set a timer
+			var framesPerSecond=30;
+			setInterval(
+			function(){moveEverything();
+			drawEverything();},1000/framesPerSecond);//every 1000 millisecond, draweverything will be reprinted. ballX(the ball) position will move right 20 more pixels everytime the smaller the number, the faster it will go
+
+			canvas.addEventListener('mousedown',handleMouseClick);
+			canvas.addEventListener('mousemove',//when the mouse moves it will be passed in to calculate mouse postion fucntion 
+				function(evt){ 
+					var mousePos= calculateMousePos(evt);
+					paddle1Y = mousePos.y-(PADDLE_HEIGHT/2);
+			   });
+			
+		}
+		
+		function computerMovement(){ 
+			var paddle2YCenter = paddle2Y + (PADDLE_HEIGHT/2);
+
+
+		// if the postion of the ball is greather than the position of the RIGHT PADDLE, then the positon of right paddle will be up or down 6 from original position
+			if(paddle2YCenter < ballY - 35){
+				paddle2Y += 6;
+			}else if(paddle2YCenter > ballY + 35){
+				paddle2Y -= 6;
+			
+			}
+		}
+		function moveEverything(){
+			
+			if (showingWinScreen){
+				return;
+			}
+			computerMovement();	
+
+			ballX += ballSpeedX; 
+			//everytime we "drawEverything, we take ballX and add ballSpeedX which is the pixels it moves every frame"
+			ballY += ballSpeedY;
+			
+			if(ballX < 0){ //if the position of the ball is less than 0, then move the ball in the opposite direction.(ballSpeedX)
+				if(ballY > paddle1Y && ballY < paddle1Y+PADDLE_HEIGHT){
+					ballSpeedX = -ballSpeedX;
+					var deltaY = ballY -(paddle1Y+ PADDLE_HEIGHT/2);
+					ballSpeedY = deltaY *0.35;
+					// if rhe ball is below the paddle or above the paddle, it will go to the other side. or else it is not in that area and will call the ballReset function
+
+
+
+				}else{ player2Score ++; //MUST BE BEFORE BALL RESET
+					ballReset();
+					
+
+				}
+				
+
+			}
+			if(ballX > canvas.width){
+				
+					if(ballY > paddle2Y && ballY < paddle2Y+PADDLE_HEIGHT){
+					ballSpeedX = -ballSpeedX
+					var deltaY = ballY -(paddle2Y+ PADDLE_HEIGHT/2);
+					ballSpeedY = deltaY *0.35;
+
+					// if rhe ball is below the paddle or above the paddle, it will go to the other side. or else it is not in that area and will call the ballReset function
+
+				}else{ player1Score ++;
+					ballReset();
+					
+
+				}
+				
+
+
+				//ballSpeedX = -ballSpeedX;// if the position of the ball is greater than the width of the canvas, then move to the left by the same speed
+			}
+
+			if (ballY<0){
+				ballSpeedY= -ballSpeedY
+			}
+
+			if(ballY > canvas.height){
+				ballSpeedY= - ballSpeedY
+			}
+
+			
+		}
+
+		function ballReset(){ //when the ball hits the other side of the wall on either direction, the ball will reset
+			if (player1Score >= WINNING_SCORE || 
+				player2Score >= WINNING_SCORE){
+				//player1Score=0;
+				//player2Score=0;
+				showingWinScreen = true;
+			}
+			ballSpeedX = -ballSpeedX
+			ballX=canvas.width/2;
+			ballY=canvas.height/2;
+		}
+		//DRAWING THE NET USED FOR LOOP
+		function drawNet(){
+			for(var i=0; i<canvas.height; i +=40){
+				colorRect(canvas.width/2-1,i,2,20,'black');
+			}//2 pixels thick. it will start at 0 and go up in intervals of 20 until it hits canvas.width 
+		}
+
+		function drawEverything(){//we can call drawEverything from anywhere after we make the function
+			
+
+			colorRect(0,0,canvas.width,canvas.height,'gray');// BACKGROUND first two dictate where rectangle will be on canvas, last two dictate the size of the rectangle.
+		if(showingWinScreen){
+
+			canvasContext.fillStyle="white";
+			if(player1Score >= WINNING_SCORE){
+				canvasContext.fillText("Left Player Won",350,200)
+			}
+				else 
+			if(player2Score >=WINNING_SCORE){
+				canvasContext.fillText("Right Player Won",350,200)
+			}
+			
+			canvasContext.fillText("Click to Continue",350,500)
+
+		} 
+		drawNet();
+			colorRect(0,paddle1Y,PADDLE_THICKNESS,PADDLE_HEIGHT,'Purple'); // PADDLE left player 
+
+			colorRect(canvas.width-PADDLE_THICKNESS,paddle2Y,PADDLE_THICKNESS,PADDLE_HEIGHT,'Pink'); //PADDLE RIGHT
+		
+			canvasContext.fillStyle ='white'// fills in color
+			 
+			colorCircle(ballX,ballY,10,'white');
+			
+			//order of shapes matter whatever is made last will be on top.
+			
+			//make a function that groups all the things we  are drawing onto canvas
+
+			canvasContext.fillText(player1Score,100,100);
+
+			canvasContext.fillText(player2Score, canvas.width-100,100)
+
+			canvasContext.fillText()
+		}
+
+		function colorCircle(centerX,centerY,radius,drawColor){
+
+			canvasContext.fillStyle =drawColor;// fills in color
+			canvasContext.beginPath(); //defines a shape
+			canvasContext.arc( centerX,centerY,radius,0,Math.PI*2,true); // X,Y is the center of the circle, 10 is the radius of the circle, 0, math.pi is radians.
+			canvasContext.fill();
+		}
+
+		function colorRect(leftX, topY, width, height, drawColor){canvasContext.fillStyle=drawColor;
+			canvasContext.fillRect(leftX,topY,width,height);// first two is how far from the top and the left your rectangle is.
+
+
+		}
+	</script>
+</html>
